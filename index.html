@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rental PS Management & Tourney Global</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- html2canvas untuk fitur Screenshot & Share Gambar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { overflow-x: hidden; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans antialiased min-h-screen" x-data="psApp()">
+
+    <!-- HALAMAN LOGIN -->
+    <div x-show="!isLoggedIn" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 sm:p-8 w-full max-w-sm shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <span class="bg-indigo-600 p-3 rounded-2xl text-white font-black text-xl inline-block shadow-lg">🎮</span>
+                <h1 class="font-bold text-xl text-white tracking-wide">PERTIG PS ARENA</h1>
+                <p class="text-xs text-gray-400">Silakan masuk untuk melanjutkan</p>
+            </div>
+
+            <form @submit.prevent="handleLogin" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Pilih Masuk Sebagai</label>
+                    <select x-model="loginRole" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Password</label>
+                    <input type="password" x-model="loginPassword" placeholder="Masukkan password..." required class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-indigo-600/30 text-sm active:scale-95">
+                    Masuk ke Aplikasi
+                </button>
+            </form>
+
+            <div class="text-[11px] text-gray-500 text-center space-y-1 bg-gray-950/50 p-3 rounded-xl border border-gray-800/80">
+                <p>💡 Info Password:</p>
+                <p>Admin: <code class="text-gray-300 font-semibold">xxxxxx</code> | User: <code class="text-gray-300 font-semibold">user123</code></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- KONTEN UTAMA APLIKASI -->
+    <div x-show="isLoggedIn" x-cloak>
+        <!-- Header & Navigation -->
+        <header class="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
+            <div class="max-w-4xl mx-auto px-4 py-3 flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-indigo-600 p-2 rounded-lg text-white font-black text-sm">🎮</span>
+                        <div>
+                            <h1 class="font-bold text-sm sm:text-base leading-tight">PERTIG PS ARENA</h1>
+                            <p class="text-[11px] text-indigo-400 font-medium capitalize" x-text="'Login: ' + role"></p>
+                        </div>
+                    </div>
+                    <button @click="logout" class="bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-bold px-3 py-2 rounded-xl border border-rose-900 transition active:scale-95" title="Keluar Akun">Keluar</button>
+                </div>
+                
+                <!-- Navigation Tabs -->
+                <nav class="flex items-center overflow-x-auto pb-1 no-scrollbar">
+                    <div class="flex bg-gray-950 p-1 rounded-xl border border-gray-800 gap-1 w-full sm:w-auto">
+                        <button x-show="role === 'admin'" @click="tab = 'match'" :class="tab === 'match' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex-1 sm:flex-none text-center">Input Match</button>
+                        <button @click="tab = 'turnamen'" :class="tab === 'turnamen' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex-1 sm:flex-none text-center">🏆 Turnamen Santai</button>
+                        <button @click="tab = 'klasemen'" :class="tab === 'klasemen' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex-1 sm:flex-none text-center">Klasemen</button>
+                        <button @click="tab = 'h2h'" :class="tab === 'h2h' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex-1 sm:flex-none text-center">H2H</button>
+                        <button @click="tab = 'tim'" :class="tab === 'tim' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex-1 sm:flex-none text-center">Tim</button>
+                        <button @click="tab = 'member'" :class="tab === 'member' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex-1 sm:flex-none text-center">Member</button>
+                        <button @click="tab = 'history'" :class="tab === 'history' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex-1 sm:flex-none text-center">Histori</button>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+
+            <!-- TAB 1: INPUT MATCH (Hanya Admin) -->
+            <div x-show="tab === 'match' && role === 'admin'" class="space-y-6">
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+                    <h2 class="text-sm sm:text-base font-bold mb-4 flex items-center gap-2 text-indigo-400">
+                        <span>⚡</span> Input Pertandingan
+                    </h2>
+
+                    <form @submit.prevent="saveMatch" class="space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-gray-950/50 p-3 sm:p-4 rounded-xl border border-gray-800/60">
+                            <!-- Player 1 -->
+                            <div class="space-y-3">
+                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Player 1 (Home)</label>
+                                <select x-model="match.p1" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                                    <option value="">Pilih Player 1</option>
+                                    <template x-for="p in players" :key="p.id">
+                                        <option :value="p.name" x-text="p.name" :disabled="match.p2 === p.name"></option>
+                                    </template>
+                                </select>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <select x-model="match.category1" @change="match.team1 = ''" class="bg-gray-900 border border-gray-700 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                                        <option value="">Pilih Kategori</option>
+                                        <template x-for="cat in categories" :key="cat.id">
+                                            <option :value="cat.id" x-text="cat.name"></option>
+                                        </template>
+                                    </select>
+                                    <select x-model="match.team1" class="bg-gray-900 border border-gray-700 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                                        <option value="">Pilih Tim / Negara</option>
+                                        <template x-for="c in getTeamsByCategory(match.category1)" :key="c.name">
+                                            <option :value="c.name" x-text="c.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <div class="flex items-center justify-center gap-4 pt-2">
+                                    <img :src="getPlayerPhoto(match.p1)" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border border-gray-700 shadow">
+                                    <div class="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center bg-gray-900 p-2 rounded-2xl border border-gray-800 shadow-inner overflow-hidden" x-html="getTeamLogoImg(match.team1, match.category1)"></div>
+                                </div>
+                            </div>
+
+                            <!-- Player 2 -->
+                            <div class="space-y-3 pt-4 md:pt-0 border-t md:border-t-0 border-gray-800">
+                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Player 2 (Away)</label>
+                                <select x-model="match.p2" required class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                                    <option value="">Pilih Player 2</option>
+                                    <template x-for="p in players" :key="p.id">
+                                        <option :value="p.name" x-text="p.name" :disabled="match.p1 === p.name"></option>
+                                    </template>
+                                </select>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <select x-model="match.category2" @change="match.team2 = ''" class="bg-gray-900 border border-gray-700 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                                        <option value="">Pilih Kategori</option>
+                                        <template x-for="cat in categories" :key="cat.id">
+                                            <option :value="cat.id" x-text="cat.name"></option>
+                                        </template>
+                                    </select>
+                                    <select x-model="match.team2" class="bg-gray-900 border border-gray-700 rounded-xl px-2 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                                        <option value="">Pilih Tim / Negara</option>
+                                        <template x-for="c in getTeamsByCategory(match.category2)" :key="c.name">
+                                            <option :value="c.name" x-text="c.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <div class="flex items-center justify-center gap-4 pt-2">
+                                    <img :src="getPlayerPhoto(match.p2)" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border border-gray-700 shadow">
+                                    <div class="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center bg-gray-900 p-2 rounded-2xl border border-gray-800 shadow-inner overflow-hidden" x-html="getTeamLogoImg(match.team2, match.category2)"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Skor & Detail Tambahan -->
+                        <div class="grid grid-cols-3 gap-2 items-center bg-gray-950/30 p-3 sm:p-4 rounded-xl border border-gray-800/60">
+                            <div class="text-center">
+                                <label class="block text-[10px] sm:text-xs font-medium text-gray-400 mb-1">Skor P1</label>
+                                <input type="number" min="0" x-model.number="match.score1" required class="w-16 sm:w-20 mx-auto bg-gray-900 border border-gray-700 text-center text-lg sm:text-xl font-bold rounded-xl py-2 focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div class="text-center font-black text-gray-500 text-base sm:text-lg">VS</div>
+                            <div class="text-center">
+                                <label class="block text-[10px] sm:text-xs font-medium text-gray-400 mb-1">Skor P2</label>
+                                <input type="number" min="0" x-model.number="match.score2" required class="w-16 sm:w-20 mx-auto bg-gray-900 border border-gray-700 text-center text-lg sm:text-xl font-bold rounded-xl py-2 focus:outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-400 mb-1">Platform / Game</label>
+                                <select x-model="match.game" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                                    <option value="EA FC 24">EA FC 24 / FIFA</option>
+                                    <option value="eFootball 2026">eFootball 2026</option>
+                                    <option value="UFC">UFC</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-400 mb-1">Badge Match</label>
+                                <select x-model="match.badge" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                                    <option value="🔥 Sengit & Ketat">🔥 Sengit & Ketat</option>
+                                    <option value="👑 Pembantaian">👑 Pembantaian</option>
+                                    <option value="⚡ Comeback Epik">⚡ Comeback Epik</option>
+                                    <option value="🤝 Derbi Sengit">🤝 Derbi Sengit</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl transition shadow-lg shadow-indigo-600/30 text-sm active:scale-95">
+                            Simpan Hasil Match
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB NEW: TURNAMEN (Saling Tanding & Hitung Kemenangan) -->
+            <div x-show="tab === 'turnamen'" class="space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <h2 class="text-base font-bold text-indigo-400">🏆 Turnamen Sapa Jago</h2>
+                        <p class="text-xs text-gray-400">Log Match.</p>
+                    </div>
+                    <button x-show="role === 'admin'" @click="generateQuickTourney" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg transition active:scale-95 w-full sm:w-auto">
+                        ⚡ Acak Lawan Tanding Baru
+                    </button>
+                </div>
+
+                <!-- Leaderboard Singkat Kemenangan Turnamen -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Peringkat Jumlah Kemenangan</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <template x-for="(p, index) in sortedPlayers" :key="p.id">
+                            <div class="bg-gray-950 border border-gray-800 p-3 rounded-xl flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-bold text-gray-500 w-4" x-text="index + 1"></span>
+                                    <img :src="p.photo" class="w-8 h-8 rounded-full object-cover border border-gray-700">
+                                    <span class="text-xs font-bold text-gray-200" x-text="p.name"></span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs text-emerald-400 font-black" x-text="p.win + ' Menang'"></span>
+                                    <span class="text-[10px] text-gray-500 block" x-text="p.points + ' Poin Total'"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Daftar Jadwal / List Saling Tanding -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                        <h3 class="text-sm font-bold text-gray-200" x-text="tournament.name || 'Daftar Tanding Aktif'"></h3>
+                        <button x-show="role === 'admin' && tournament.matches.length > 0" @click="resetTournament" class="text-rose-400 hover:text-rose-300 text-xs bg-rose-950/40 px-3 py-1.5 rounded-xl border border-rose-900 transition">Reset List</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <template x-for="(tm, index) in tournament.matches" :key="tm.id">
+                            <div class="bg-gray-950 border border-gray-800 p-3.5 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-3">
+                                <div class="w-full sm:w-auto text-center sm:text-left">
+                                    <span class="text-[10px] text-indigo-400 font-semibold block" x-text="'Match ' + (index + 1)"></span>
+                                    <span class="text-xs font-bold text-gray-300" x-text="tm.p1 + ' vs ' + tm.p2"></span>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <input type="number" min="0" x-model.number="tm.score1" :disabled="role !== 'admin' || tm.status === 'Selesai'" class="w-14 bg-gray-900 border border-gray-700 text-center text-sm font-bold rounded-lg py-1">
+                                    <span class="text-xs text-gray-500 font-bold">-</span>
+                                    <input type="number" min="0" x-model.number="tm.score2" :disabled="role !== 'admin' || tm.status === 'Selesai'" class="w-14 bg-gray-900 border border-gray-700 text-center text-sm font-bold rounded-lg py-1">
+                                </div>
+
+                                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                    <span class="text-[10px] px-2 py-1 rounded font-semibold" :class="tm.status === 'Selesai' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'" x-text="tm.status"></span>
+                                    <button x-show="role === 'admin' && tm.status !== 'Selesai'" @click="finishTournamentMatch(tm.id)" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition active:scale-95">
+                                        Simpan
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="tournament.matches.length === 0">
+                            <div class="py-8 text-center text-gray-500 text-xs sm:text-sm">
+                                Belum ada daftar tanding. Admin dapat mengklik tombol "Acak Lawan Tanding Baru" di atas untuk memasangkan member!
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: KLASEMEN -->
+            <div x-show="tab === 'klasemen'" class="space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <h2 class="text-sm sm:text-base font-bold text-indigo-400">Klasemen Sementara</h2>
+                    <button @click="shareAsImage('klasemen-section', 'Klasemen Rental')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition shadow-md active:scale-95 w-full sm:w-auto justify-center">
+                        📲 Share ke WA (Gambar)
+                    </button>
+                </div>
+
+                <div id="klasemen-section" class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl p-3 sm:p-4">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[320px]">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-gray-400 text-[11px] sm:text-xs uppercase tracking-wider">
+                                    <th class="py-3 px-2">No</th>
+                                    <th class="py-3 px-2">Player</th>
+                                    <th class="py-3 px-2 text-center">M</th>
+                                    <th class="py-3 px-2 text-center">S</th>
+                                    <th class="py-3 px-2 text-center">K</th>
+                                    <th class="py-3 px-2 text-center font-bold text-indigo-400">Poin</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-800/60 text-xs sm:text-sm">
+                                <template x-for="(p, index) in sortedPlayers" :key="p.id">
+                                    <tr class="hover:bg-gray-800/40 transition">
+                                        <td class="py-3 px-2 font-semibold text-gray-400" x-text="index + 1"></td>
+                                        <td class="py-3 px-2 flex items-center gap-2 sm:gap-3">
+                                            <img :src="p.photo" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-gray-700 shrink-0">
+                                            <span class="font-medium truncate max-w-[90px] sm:max-w-none" x-text="p.name"></span>
+                                        </td>
+                                        <td class="py-3 px-2 text-center text-emerald-400 font-semibold" x-text="p.win"></td>
+                                        <td class="py-3 px-2 text-center text-amber-400 font-semibold" x-text="p.draw"></td>
+                                        <td class="py-3 px-2 text-center text-rose-400 font-semibold" x-text="p.lose"></td>
+                                        <td class="py-3 px-2 text-center font-black text-indigo-400 text-sm sm:text-base" x-text="p.points"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: H2H -->
+            <div x-show="tab === 'h2h'" class="space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <h2 class="text-sm sm:text-base font-bold text-indigo-400">Head-to-Head (H2H)</h2>
+                    <button x-show="h2hStats.totalMatches > 0" @click="shareAsImage('h2h-section', 'H2H ' + h2hStats.p1Name + ' vs ' + h2hStats.p2Name)" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition shadow-md active:scale-95 w-full sm:w-auto justify-center">
+                        📲 Share H2H ke WA
+                    </button>
+                </div>
+
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-xl grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Pilih Player Pertama</label>
+                        <select x-model="h2h.p1" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="">-- Pilih Player --</option>
+                            <template x-for="p in players" :key="p.id">
+                                <option :value="p.name" x-text="p.name" :disabled="h2h.p2 === p.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Pilih Player Kedua</label>
+                        <select x-model="h2h.p2" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="">-- Pilih Player --</option>
+                            <template x-for="p in players" :key="p.id">
+                                <option :value="p.name" x-text="p.name" :disabled="h2h.p1 === p.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="h2h-section" class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4" x-show="h2hStats.totalMatches > 0">
+                    <div class="text-center pb-3 border-b border-gray-800">
+                        <p class="text-[10px] sm:text-xs text-gray-400 uppercase tracking-widest font-semibold">Head to Head Record</p>
+                        <h3 class="text-base sm:text-lg font-bold text-indigo-300 mt-1" x-text="h2hStats.p1Name + ' vs ' + h2hStats.p2Name"></h3>
+                        <p class="text-xs text-gray-500 mt-0.5" x-text="'Total Pertemuan: ' + h2hStats.totalMatches + ' Match'"></p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+                        <div class="bg-gray-950/60 p-2.5 sm:p-3 rounded-xl border border-gray-800">
+                            <p class="text-[10px] sm:text-xs text-gray-400 mb-1 truncate" x-text="h2hStats.p1Name"></p>
+                            <p class="text-xl sm:text-2xl font-black text-emerald-400" x-text="h2hStats.p1Wins"></p>
+                        </div>
+                        <div class="bg-gray-950/60 p-2.5 sm:p-3 rounded-xl border border-gray-800">
+                            <p class="text-[10px] sm:text-xs text-gray-400 mb-1">Seri</p>
+                            <p class="text-xl sm:text-2xl font-black text-amber-400" x-text="h2hStats.draws"></p>
+                        </div>
+                        <div class="bg-gray-950/60 p-2.5 sm:p-3 rounded-xl border border-gray-800">
+                            <p class="text-[10px] sm:text-xs text-gray-400 mb-1 truncate" x-text="h2hStats.p2Name"></p>
+                            <p class="text-xl sm:text-2xl font-black text-rose-400" x-text="h2hStats.p2Wins"></p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 pt-2">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Histori Laga Langsung</p>
+                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            <template x-for="m in h2hStats.matches" :key="m.id">
+                                <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 flex justify-between items-center text-xs gap-2">
+                                    <div class="truncate">
+                                        <span class="text-[10px] text-gray-500 block" x-text="m.date"></span>
+                                        <div class="font-semibold text-gray-200 mt-0.5 truncate" x-text="m.p1 + ' (' + m.team1 + ') vs ' + m.p2 + ' (' + m.team2 + ')'"></div>
+                                    </div>
+                                    <div class="shrink-0 text-right">
+                                        <span class="font-black text-xs sm:text-sm px-2 py-1 bg-indigo-950 rounded text-indigo-300 border border-indigo-800" x-text="m.score1 + ' - ' + m.score2"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="!h2h.p1 || !h2h.p2 || h2hStats.totalMatches === 0" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 sm:p-8 text-center text-gray-500 text-xs sm:text-sm">
+                    Pilih kedua player di atas untuk melihat statistik Head-to-Head.
+                </div>
+            </div>
+
+            <!-- TAB 4: TIM -->
+            <div x-show="tab === 'tim'" class="space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <h2 class="text-sm sm:text-base font-bold text-indigo-400">Statistik Klub / Tim</h2>
+                    <button @click="shareAsImage('tim-section', 'Statistik Tim Rental')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition shadow-md active:scale-95 w-full sm:w-auto justify-center">
+                        📲 Share Tim ke WA
+                    </button>
+                </div>
+
+                <div id="tim-section" class="bg-gray-900 border border-gray-800 rounded-2xl p-3 sm:p-4 shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[320px]">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-gray-400 text-[11px] sm:text-xs uppercase tracking-wider">
+                                    <th class="py-3 px-2">Logo</th>
+                                    <th class="py-3 px-2">Klub / Tim</th>
+                                    <th class="py-3 px-2 text-center">Main</th>
+                                    <th class="py-3 px-2 text-center">Menang</th>
+                                    <th class="py-3 px-2 text-center">Win Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-800/60 text-xs sm:text-sm">
+                                <template x-for="t in teamStats" :key="t.name">
+                                    <tr class="hover:bg-gray-800/40 transition">
+                                        <td class="py-3 px-2">
+                                            <div class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-gray-950 p-1.5 rounded-xl border border-gray-800 overflow-hidden shrink-0" x-html="getTeamLogoImg(t.name, 'all')"></div>
+                                        </td>
+                                        <td class="py-3 px-2 font-medium truncate max-w-[120px] sm:max-w-none" x-text="t.name"></td>
+                                        <td class="py-3 px-2 text-center text-gray-300 font-semibold" x-text="t.played"></td>
+                                        <td class="py-3 px-2 text-center text-emerald-400 font-semibold" x-text="t.won"></td>
+                                        <td class="py-3 px-2 text-center font-bold text-indigo-400" x-text="t.winRate + '%'"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: MEMBER -->
+            <div x-show="tab === 'member'" class="space-y-6">
+                <!-- Form Tambah Member -->
+                <div x-show="role === 'admin'" class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+                    <h2 class="text-sm sm:text-base font-bold mb-3 text-indigo-400">Tambah Member Baru</h2>
+                    <form @submit.prevent="addPlayer" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1">Nama Member</label>
+                            <input type="text" x-model="newPlayer.name" placeholder="cth: Budi" required class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1">URL Foto Profil (Opsional)</label>
+                            <input type="url" x-model="newPlayer.photo" placeholder="https://images.unsplash.com/..." class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl transition text-sm active:scale-95">
+                            Tambah ke Daftar Member
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Daftar List Member -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
+                    <h2 class="text-sm sm:text-base font-bold text-indigo-400">Daftar Member Aktif</h2>
+                    <div class="divide-y divide-gray-800/60">
+                        <template x-for="p in players" :key="p.id">
+                            <div class="py-3 flex justify-between items-center gap-2">
+                                <div class="flex items-center gap-3 truncate">
+                                    <img :src="p.photo" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-700 shrink-0">
+                                    <div class="truncate">
+                                        <p class="font-bold text-xs sm:text-sm truncate" x-text="p.name"></p>
+                                        <p class="text-[10px] sm:text-xs text-gray-400 truncate" x-text="'Aktif: ' + p.lastActive"></p>
+                                    </div>
+                                </div>
+                                <button x-show="role === 'admin'" @click="deletePlayer(p.id)" class="bg-rose-950/50 hover:bg-rose-900 text-rose-300 text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-rose-900 transition shrink-0 active:scale-95">Hapus</button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: HISTORI -->
+            <div x-show="tab === 'history'" class="space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <h2 class="text-sm sm:text-base font-bold text-indigo-400">Histori Seluruh Pertandingan</h2>
+                    <button x-show="role === 'admin'" @click="resetAllHistory" class="bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-bold px-3 py-2 rounded-xl border border-rose-900 transition active:scale-95 w-full sm:w-auto text-center">⚠️ Reset Sistem</button>
+                </div>
+
+                <div class="space-y-3">
+                    <template x-for="m in history" :key="m.id">
+                        <div class="bg-gray-900 border border-gray-800 p-3 sm:p-4 rounded-2xl shadow-lg flex flex-col gap-3">
+                            <div class="flex flex-wrap items-center justify-between gap-1 border-b border-gray-800/80 pb-2">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800 font-semibold" x-text="m.game"></span>
+                                    <span class="text-[10px] bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-medium" x-text="m.badge"></span>
+                                </div>
+                                <span class="text-[10px] text-gray-500" x-text="m.date"></span>
+                            </div>
+
+                            <div class="flex justify-between items-center gap-2">
+                                <div class="flex items-center gap-2 flex-1 min-w-0">
+                                    <div class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-gray-950 p-1 rounded-xl border border-gray-800 overflow-hidden shrink-0" x-html="getTeamLogoImg(m.team1)"></div>
+                                    <span class="font-bold text-xs sm:text-sm truncate" x-text="m.p1"></span>
+                                </div>
+
+                                <div class="shrink-0 px-2 text-center">
+                                    <span class="font-black text-indigo-400 text-sm sm:text-base px-2.5 py-1 bg-gray-950 rounded-xl border border-gray-800" x-text="m.score1 + ' - ' + m.score2"></span>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2 flex-1 min-w-0 text-right">
+                                    <span class="font-bold text-xs sm:text-sm truncate" x-text="m.p2"></span>
+                                    <div class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-gray-950 p-1 rounded-xl border border-gray-800 overflow-hidden shrink-0" x-html="getTeamLogoImg(m.team2)"></div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end pt-1" x-show="role === 'admin'">
+                                <button @click="deleteMatch(m.id)" class="text-rose-400 hover:text-rose-300 text-xs bg-rose-950/30 px-3 py-1.5 rounded-xl border border-rose-900/50 transition active:scale-95">Hapus Match Ini</button>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="history.length === 0">
+                        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 text-center text-gray-500 text-xs sm:text-sm">
+                            Belum ada catatan pertandingan yang tersimpan.
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Alpine.js Application Logic -->
+    <script>
+        function psApp() {
+            return {
+                isLoggedIn: localStorage.getItem('ps_logged_in') === 'true',
+                role: localStorage.getItem('ps_role') || 'user',
+                loginRole: 'user',
+                loginPassword: '',
+                
+                tab: 'klasemen',
+                categories: [
+                    { id: 'nasional', name: '🌍 Tim Nasional FIFA (211 Negara)' },
+                    { id: 'epl', name: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 English Premier League' },
+                    { id: 'laliga', name: '🇪🇸 Spanish La Liga' },
+                    { id: 'seriea', name: '🇮🇹 Italian Serie A' },
+                    { id: 'bundesliga', name: '🇩🇪 German Bundesliga' },
+                    { id: 'ligue1', name: '🇫🇷 French Ligue 1' },
+                    { id: 'ucl', name: '⭐ UEFA Champions League' }
+                ],
+                teamsDatabase: {
+                    nasional: [
+                        { name: 'Indonesia', flag: 'id' }, { name: 'Argentina', flag: 'ar' }, { name: 'Brasil', flag: 'br' },
+                        { name: 'Prancis', flag: 'fr' }, { name: 'Inggris', flag: 'gb-eng' }, { name: 'Spanyol', flag: 'es' },
+                        { name: 'Jerman', flag: 'de' }, { name: 'Portugal', flag: 'pt' }, { name: 'Belanda', flag: 'nl' }
+                    ],
+                    epl: [
+                        { name: 'Manchester City', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8456.png' },
+                        { name: 'Arsenal', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/9825.png' },
+                        { name: 'Liverpool', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8650.png' },
+                        { name: 'Manchester United', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/10260.png' }
+                    ],
+                    laliga: [
+                        { name: 'Real Madrid', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8633.png' },
+                        { name: 'Barcelona', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8634.png' }
+                    ],
+                    seriea: [
+                        { name: 'Inter Milan', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8636.png' },
+                        { name: 'AC Milan', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8564.png' }
+                    ],
+                    bundesliga: [
+                        { name: 'Bayern Munich', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/9823.png' }
+                    ],
+                    ligue1: [
+                        { name: 'Paris Saint-Germain', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/9847.png' }
+                    ],
+                    ucl: [
+                        { name: 'Real Madrid', logo: 'https://images.fotmob.com/image_resources/logo/teamlogo/8633.png' }
+                    ]
+                },
+                players: JSON.parse(localStorage.getItem('ps_players')) || [
+                    { id: 1, name: 'Nasir', photo: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80', win: 0, draw: 0, lose: 0, points: 0, lastActive: '-' },
+                    { id: 2, name: 'Rian', photo: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80', win: 0, draw: 0, lose: 0, points: 0, lastActive: '-' }
+                ],
+                history: JSON.parse(localStorage.getItem('ps_history')) || [],
+                tournament: JSON.parse(localStorage.getItem('ps_tournament')) || { name: '', matches: [] },
+                match: { p1: '', category1: '', team1: '', p2: '', category2: '', team2: '', score1: 0, score2: 0, game: 'EA FC 24', badge: '🔥 Sengit & Ketat' },
+                newPlayer: { name: '', photo: '' },
+                h2h: { p1: '', p2: '' },
+
+                init() {
+                    this.recalculateStats();
+                    if (this.role === 'admin') {
+                        this.tab = 'match';
+                    }
+                },
+
+                handleLogin() {
+                    if (this.loginRole === 'admin' && this.loginPassword === 'admin23') {
+                        this.isLoggedIn = true;
+                        this.role = 'admin';
+                        this.tab = 'match';
+                    } else if (this.loginRole === 'user' && this.loginPassword === 'user123') {
+                        this.isLoggedIn = true;
+                        this.role = 'user';
+                        this.tab = 'klasemen';
+                    } else {
+                        alert("Password salah! Gunakan 'admin23' untuk admin atau 'user123' untuk user.");
+                        return;
+                    }
+                    localStorage.setItem('ps_logged_in', 'true');
+                    localStorage.setItem('ps_role', this.role);
+                    this.loginPassword = '';
+                },
+
+                logout() {
+                    this.isLoggedIn = false;
+                    localStorage.removeItem('ps_logged_in');
+                    localStorage.removeItem('ps_role');
+                },
+
+                getTeamsByCategory(catId) {
+                    return this.teamsDatabase[catId] || [];
+                },
+
+                getTeamLogoImg(teamName, categoryKey = null) {
+                    if (!teamName || teamName === 'Tanpa Tim') return '<span class="text-xs">🛡️</span>';
+                    if (categoryKey === 'nasional') {
+                        let foundNat = this.teamsDatabase.nasional.find(n => n.name.toLowerCase() === teamName.toLowerCase());
+                        if (foundNat && foundNat.flag) return `<img src="https://flagcdn.com/w80/${foundNat.flag}.png" class="w-full h-full object-contain rounded">`;
+                    }
+                    for (let key in this.teamsDatabase) {
+                        let found = this.teamsDatabase[key].find(item => item.name.toLowerCase() === teamName.toLowerCase());
+                        if (found) {
+                            if (found.logo) return `<img src="${found.logo}" class="w-full h-full object-contain">`;
+                            if (found.flag) return `<img src="https://flagcdn.com/w80/${found.flag}.png" class="w-full h-full object-contain rounded">`;
+                        }
+                    }
+                    return '<span class="text-xs font-bold">⚽</span>';
+                },
+
+                getPlayerPhoto(playerName) {
+                    let p = this.players.find(item => item.name === playerName);
+                    return p && p.photo ? p.photo : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
+                },
+
+                saveMatch() {
+                    if (this.role !== 'admin') return;
+                    if (this.match.p1 === this.match.p2) {
+                        alert("Player 1 dan Player 2 tidak boleh orang yang sama!");
+                        return;
+                    }
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                    const newEntry = {
+                        id: Date.now(),
+                        p1: this.match.p1,
+                        team1: this.match.team1 || 'Tanpa Tim',
+                        p2: this.match.p2,
+                        team2: this.match.team2 || 'Tanpa Tim',
+                        score1: Number(this.match.score1),
+                        score2: Number(this.match.score2),
+                        game: this.match.game,
+                        badge: this.match.badge,
+                        date: dateStr
+                    };
+
+                    this.history.unshift(newEntry);
+                    localStorage.setItem('ps_history', JSON.stringify(this.history));
+                    this.recalculateStats();
+                    this.match.score1 = 0;
+                    this.match.score2 = 0;
+                    alert("Hasil pertandingan berhasil disimpan!");
+                },
+
+                deleteMatch(id) {
+                    if (this.role !== 'admin') return;
+                    if (confirm("Hapus catatan match ini?")) {
+                        this.history = this.history.filter(m => m.id !== id);
+                        localStorage.setItem('ps_history', JSON.stringify(this.history));
+                        this.recalculateStats();
+                    }
+                },
+
+                generateQuickTourney() {
+                    if (this.players.length < 2) {
+                        alert("Minimal harus ada 2 member terdaftar untuk membuat daftar tanding!");
+                        return;
+                    }
+                    let shuffled = [...this.players].sort(() => 0.5 - Math.random());
+                    let matches = [];
+                    for (let i = 0; i < shuffled.length; i += 2) {
+                        if (i + 1 < shuffled.length) {
+                            matches.push({
+                                id: Date.now() + i,
+                                p1: shuffled[i].name,
+                                p2: shuffled[i+1].name,
+                                score1: 0,
+                                score2: 0,
+                                status: 'Belum Main'
+                            });
+                        }
+                    }
+                    this.tournament = {
+                        name: 'Sesi Saling Tanding #' + Math.floor(Math.random() * 900 + 100),
+                        matches: matches
+                    };
+                    localStorage.setItem('ps_tournament', JSON.stringify(this.tournament));
+                    alert("Daftar tanding baru berhasil dibuat!");
+                },
+
+                finishTournamentMatch(id) {
+                    let m = this.tournament.matches.find(item => item.id === id);
+                    if (m) {
+                        m.status = 'Selesai';
+                        localStorage.setItem('ps_tournament', JSON.stringify(this.tournament));
+                        // Catat ke histori utama agar masuk ke total kemenangan & klasemen
+                        const now = new Date();
+                        const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                        this.history.unshift({
+                            id: Date.now(),
+                            p1: m.p1,
+                            team1: 'Sesi Tanding',
+                            p2: m.p2,
+                            team2: 'Sesi Tanding',
+                            score1: Number(m.score1),
+                            score2: Number(m.score2),
+                            game: 'EA FC 24',
+                            badge: '🏆 Turnamen slow saja',
+                            date: dateStr
+                        });
+                        localStorage.setItem('ps_history', JSON.stringify(this.history));
+                        this.recalculateStats();
+                        alert("Skor tersimpan dan jumlah kemenangan diperbarui!");
+                    }
+                },
+
+                resetTournament() {
+                    if (confirm("Hapus daftar tanding saat ini?")) {
+                        this.tournament = { name: '', matches: [] };
+                        localStorage.removeItem('ps_tournament');
+                    }
+                },
+
+                recalculateStats() {
+                    this.players.forEach(p => { p.win = 0; p.draw = 0; p.lose = 0; p.points = 0; p.lastActive = '-'; });
+                    this.history.forEach(m => {
+                        let p1Obj = this.players.find(p => p.name === m.p1);
+                        let p2Obj = this.players.find(p => p.name === m.p2);
+                        if (p1Obj && p1Obj.lastActive === '-') p1Obj.lastActive = m.date;
+                        if (p2Obj && p2Obj.lastActive === '-') p2Obj.lastActive = m.date;
+
+                        if (m.score1 > m.score2) {
+                            if (p1Obj) { p1Obj.win++; p1Obj.points += 3; }
+                            if (p2Obj) { p2Obj.lose++; }
+                        } else if (m.score1 < m.score2) {
+                            if (p2Obj) { p2Obj.win++; p2Obj.points += 3; }
+                            if (p1Obj) { p1Obj.lose++; }
+                        } else {
+                            if (p1Obj) { p1Obj.draw++; p1Obj.points += 1; }
+                            if (p2Obj) { p2Obj.draw++; p2Obj.points += 1; }
+                        }
+                    });
+                    localStorage.setItem('ps_players', JSON.stringify(this.players));
+                },
+
+                get sortedPlayers() {
+                    return [...this.players].sort((a, b) => b.win !== a.win ? b.win - a.win : b.points - a.points);
+                },
+
+                get h2hStats() {
+                    if (!this.h2h.p1 || !this.h2h.p2 || this.h2h.p1 === this.h2h.p2) return { p1Name: '', p2Name: '', p1Wins: 0, p2Wins: 0, draws: 0, totalMatches: 0, matches: [] };
+                    let filtered = this.history.filter(m => (m.p1 === this.h2h.p1 && m.p2 === this.h2h.p2) || (m.p1 === this.h2h.p2 && m.p2 === this.h2h.p1));
+                    let p1Wins = 0, p2Wins = 0, draws = 0;
+                    filtered.forEach(m => {
+                        if (m.score1 === m.score2) draws++;
+                        else if (m.p1 === this.h2h.p1) { if (m.score1 > m.score2) p1Wins++; else p2Wins++; }
+                        else { if (m.score2 > m.score1) p1Wins++; else p2Wins++; }
+                    });
+                    return { p1Name: this.h2h.p1, p2Name: this.h2h.p2, p1Wins, p2Wins, draws, totalMatches: filtered.length, matches: filtered };
+                },
+
+                get teamStats() {
+                    let map = {};
+                    this.history.forEach(m => {
+                        if (m.team1 && m.team1 !== 'Tanpa Tim' && m.team1 !== 'Sesi Tanding') {
+                            if (!map[m.team1]) map[m.team1] = { name: m.team1, played: 0, won: 0 };
+                            map[m.team1].played++;
+                            if (m.score1 > m.score2) map[m.team1].won++;
+                        }
+                        if (m.team2 && m.team2 !== 'Tanpa Tim' && m.team2 !== 'Sesi Tanding') {
+                            if (!map[m.team2]) map[m.team2] = { name: m.team2, played: 0, won: 0 };
+                            map[m.team2].played++;
+                            if (m.score2 > m.score1) map[m.team2].won++;
+                        }
+                    });
+                    return Object.values(map).map(t => { t.winRate = t.played > 0 ? Math.round((t.won / t.played) * 100) : 0; return t; }).sort((a, b) => b.played - a.played);
+                },
+
+                addPlayer() {
+                    if (this.role !== 'admin') return;
+                    if (!this.newPlayer.name.trim()) return;
+                    this.players.push({
+                        id: Date.now(),
+                        name: this.newPlayer.name.trim(),
+                        photo: this.newPlayer.photo.trim() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+                        win: 0, draw: 0, lose: 0, points: 0, lastActive: '-'
+                    });
+                    localStorage.setItem('ps_players', JSON.stringify(this.players));
+                    this.newPlayer.name = ''; this.newPlayer.photo = '';
+                    alert("Member baru berhasil ditambahkan!");
+                },
+
+                deletePlayer(id) {
+                    if (this.role !== 'admin') return;
+                    if (confirm("Hapus member ini?")) {
+                        this.players = this.players.filter(p => p.id !== id);
+                        localStorage.setItem('ps_players', JSON.stringify(this.players));
+                    }
+                },
+
+                resetAllHistory() {
+                    if (this.role !== 'admin') return;
+                    if (confirm("PERINGATAN: Seluruh histori match akan dihapus permanen!")) {
+                        this.history = [];
+                        localStorage.removeItem('ps_history');
+                        this.recalculateStats();
+                        alert("Sistem di-reset.");
+                    }
+                },
+
+                async shareAsImage(elementId, title) {
+                    const element = document.getElementById(elementId);
+                    if (!element) return;
+                    try {
+                        const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#111827', useCORS: true });
+                        canvas.toBlob(async (blob) => {
+                            const file = new File([blob], `${title.toLowerCase().replace(/\s+/g, '_')}.png`, { type: 'image/png' });
+                            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                try { await navigator.share({ title, text: `📊 Laporan ${title}`, files: [file] }); return; } catch (e) {}
+                            }
+                            const link = document.createElement('a');
+                            link.href = canvas.toDataURL('image/png');
+                            link.download = `${title.toLowerCase().replace(/\s+/g, '_')}.png`;
+                            link.click();
+                        }, 'image/png');
+                    } catch (error) {
+                        alert("Gagal membuat gambar.");
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
